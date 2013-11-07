@@ -8,7 +8,7 @@ public class BeastAttack
         {
 		byte[] ciphertext=new byte[1024]; // will be plenty big enough
 		byte[] newCipherText=new byte[1024]; 
-        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00};
+        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x41};
 		byte[] previousIV = new byte[8];
 		byte[] newlyPreditedIV = new byte[8];
 		byte[] XORPredictedIVWithPrefix = new byte[8];
@@ -27,24 +27,25 @@ public class BeastAttack
 	    		if (i<8){
 				previousIV[i] = ciphertext[i];
 				newlyPreditedIV[i] = previousIV[i];
-			if (i==7){
+				if (i==7){
 				lastByte = (((previousIV[7] & 0xFF) + 100) < 256 ? ((previousIV[7] & 0xFF) + 100) : (previousIV[7] & 0xFF) - 156 );
 				}
-			if (i==6)
+				if (i==6)
 				oneBeforeLastByte = previousIV[6] & 0xFF;
-	    	}
-int t = (int)previousIV[7];
-	    //System.out.print(String.format("%02x ",ciphertext[i]));
-	    System.out.print(String.format(" Previous %02x ",previousIV[7]));
- 	    System.out.print(String.format(" decimal "+ (previousIV[7] & 0xFF)));
-	    System.out.print(String.format(" decimal signed "+ ((int)previousIV[7])));
-	    System.out.println(String.format(" byte decimal signed %02x ",(byte)(previousIV[7] & 0xFF)));
-	   // System.out.println(String.format(" Previous number "+ lastByte));
-	   // System.out.println("  Last Byte " + lastByte);
-	   // System.out.print(String.format("Hello %d ",previousIV[7]));
-	}
-
-	for (int j = 0; j< 10; j++)
+	    		}
+	    		//int t = (int)previousIV[7];
+	    		System.out.print(String.format("%02x ",ciphertext[i]));
+	    		//System.out.print(String.format(" Previous %02x ",previousIV[7]));
+ 	   		//System.out.print(String.format(" decimal "+ (previousIV[7] & 0xFF)));
+	   		//System.out.print(String.format(" decimal signed "+ ((int)previousIV[7])));
+	   	 	//System.out.println(String.format(" byte decimal signed %02x ",(byte)(lastByte & 0xFF)));
+	   		//System.out.println(String.format(" Previous number "+ lastByte));
+	   		//System.out.println("  Last Byte " + lastByte);
+	   		//System.out.print(String.format("Hello %d ",previousIV[7]));
+		}
+		System.out.println();
+		findoutHowtodothis(ciphertext,newCipherText,prefix,previousIV,newlyPreditedIV,XORPredictedIVWithPrefix,lastByte,oneBeforeLastByte);
+	/*for (int j = 0; j< 10; j++)
 	{	
 		for (int p = 0; p < 30; p++ )
 		{	
@@ -64,7 +65,7 @@ int t = (int)previousIV[7];
 			if (lastByte == 256)
 				lastByte = 0;
 		}
-	}
+	}*/
 		
 		/*
 		//System.out.println(String.format("Printing newlyPredicted IV  %02x ", newlyPreditedIV[7]));
@@ -92,41 +93,52 @@ int t = (int)previousIV[7];
 
 	
     	
- }
+	 }
 
 /*************************************************************************************************************************************************/
-	/*public static void findoutHowtodothis(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix,int lastByte)
+	public static void findoutHowtodothis(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix,int lastByte,int oneBeforeLastByte) throws IOException
 	{
 		int counterForLastByte = 0;
-		while (counterForLastByte < 256){
-			Byte b = 0; 
-			if (lastByte < 128 && lastByte >= 0){			
-				 b = Byte.valueOf(lastByte+""); 
-				 System.out.println(String.format("Value of b1 %02x", b));
+		int counterForOneBeforeLastByte = 0;
+		int predictedIVIntegerValue = 0;
+		int previousIVIntegerValue = 0;
+		int prefixIntegerValue = 0;
+		int xor = 0;
+		while (counterForOneBeforeLastByte < 20){
+			while (counterForLastByte < 256){
+				Byte a = (byte)(newCipherText[6] & 0xFF);
+				newlyPreditedIV[6] = a;
+				Byte b = (byte)((newCipherText[7] & 0xFF) + 10);
+				newlyPreditedIV[7] = b;		
+				for (int k=0; k<8; k++){
+					predictedIVIntegerValue = (int)newlyPreditedIV[k];
+					previousIVIntegerValue = (int)previousIV[k];
+					prefixIntegerValue = (int)prefix[k];
+					xor = predictedIVIntegerValue^previousIVIntegerValue^prefixIntegerValue;
+					byte c = (byte)(0xff & xor);
+					XORPredictedIVWithPrefix[k] = c;
+				}
+				int lengthOfPredictedBlock=callEncrypt(XORPredictedIVWithPrefix,8,newCipherText);
+				if (Arrays.equals(Arrays.copyOfRange(ciphertext, 8, 15),Arrays.copyOfRange(newCipherText, 8, 15))){
+					System.out.println("WOOOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");				
+				}
+				else {
+					for(int i=0; i<8; i++)
+					{
+	   					 if (i%8 == 0)
+	    						System.out.println();
+	  					 System.out.print(String.format("Predicted IV %02x ", newlyPreditedIV[i]));
+						 System.out.println(String.format("System IV %02x ", newCipherText[i]));
+					}
+					System.out.println();				
+				}
+				counterForLastByte++;
+				lastByte++;
 			}
-			else if (lastByte >= 128 && lastByte < 256) {
-				 b = Byte.valueOf((lastByte - 256)+"");
-				 System.out.println(String.format("Value of b2 %02x", b));
-			}
-			else 
-				System.out.println(String.format("This is impossible. This cannot be a Byte Value %02x", b));	
-			newlyPreditedIV[7] = b;	
-			int predictedIVIntegerValue = 0;
-			int previousIVIntegerValue = 0;
-			int prefixIntegerValue = 0;
-			int xor = 0;
-			for (int k=0; k<8; k++){
-				predictedIVIntegerValue = (int)newlyPreditedIV[k];
-				previousIVIntegerValue = (int)previousIV[k];
-				prefixIntegerValue = (int)prefix[k];
-				xor = predictedIVIntegerValue^previousIVIntegerValue^prefixIntegerValue;
-				byte c = (byte)(0xff & xor);
-				XORPredictedIVWithPrefix[k] = c;
-			}
-			counterForLastByte++;
+			counterForOneBeforeLastByte++;
+			oneBeforeLastByte++;
 		}		
-	}*/
-
+	}
 /*************************************************************************************************************************************************/
    	public static void dummyProgramPrintingAllCode256Times(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix)
 	{
