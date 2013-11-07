@@ -8,7 +8,7 @@ public class BeastAttack
         {
 		byte[] ciphertext=new byte[1024]; // will be plenty big enough
 		byte[] newCipherText=new byte[1024]; 
-        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x41};
+        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x54};
 		byte[] previousIV = new byte[8];
 		byte[] newlyPreditedIV = new byte[8];
 		byte[] XORPredictedIVWithPrefix = new byte[8];
@@ -104,7 +104,6 @@ public class BeastAttack
 		int previousIVIntegerValue = 0;
 		int prefixIntegerValue = 0;
 		int xor = 0;
-		while (counterForOneBeforeLastByte < 20){
 			while (counterForLastByte < 256){
 				Byte a = (byte)(newCipherText[6] & 0xFF);
 				newlyPreditedIV[6] = a;
@@ -120,7 +119,17 @@ public class BeastAttack
 				}
 				int lengthOfPredictedBlock=callEncrypt(XORPredictedIVWithPrefix,8,newCipherText);
 				if (Arrays.equals(Arrays.copyOfRange(ciphertext, 8, 15),Arrays.copyOfRange(newCipherText, 8, 15))){
-					System.out.println("WOOOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");				
+					//Find all possibilities of 8 - 15 in newCipher Matching 16 - 23 in newCipher
+					for (int t=8; t<16; t++){
+						for (int u=16; u<24; u++){
+							System.out.println(String.format("New Cipher Text  %02x  %02x",newCipherText[t],newCipherText[u]));
+							if (newCipherText[t] == newCipherText[u]){
+								System.out.println("You've Cracked it Baby");
+							}
+						}
+					} 
+					System.out.println("WOOOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+					break;				
 				}
 				else {
 					for(int i=0; i<8; i++)
@@ -136,8 +145,7 @@ public class BeastAttack
 				lastByte++;
 			}
 			counterForOneBeforeLastByte++;
-			oneBeforeLastByte++;
-		}		
+			oneBeforeLastByte++;		
 	}
 /*************************************************************************************************************************************************/
    	public static void dummyProgramPrintingAllCode256Times(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix)
