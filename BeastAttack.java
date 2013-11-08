@@ -11,18 +11,20 @@ public class BeastAttack
         {
 		byte[] ciphertext=new byte[1024]; // will be plenty big enough
 		byte[] newCipherText=new byte[1024]; 
-        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00};
+        	//byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00};
 		byte[] dummyArray = new byte[8];
 		byte[] tempArray = new byte[8];
 		byte[] previousIV = new byte[8];
 		byte[] newlyPreditedIV = new byte[8];
 		byte[] XORPredictedIVWithPrefix = new byte[8];
-		
+		byte[] newPrefix = new byte[8];
 		byte guessedCharacterReturned = 0;
 		int blockDecoded = 6;
 	
-		
-			int length=callEncrypt(prefix,7,ciphertext);
+		for (int j=7; j>0; j--)
+		{
+			byte[] prefix=new byte[j];
+			int length=callEncrypt(prefix,j,ciphertext);
 			long previousDate = new Date().getTime();
 			byte[] currentIV = Arrays.copyOfRange(ciphertext, 0, 8);
 			byte[] encBlock = Arrays.copyOfRange(ciphertext, 8, 16);
@@ -34,46 +36,61 @@ public class BeastAttack
 	    				System.out.println();
 				System.out.print(String.format("%02x ",ciphertext[i]));
 	    		}
-			findoutHowtodothis(encBlock,newCipherText,previousIV,newlyPreditedIV,previousDate,currentIV);
+			guessedCharacterReturned = findoutHowtodothis(encBlock,newCipherText,previousIV,newlyPreditedIV,previousDate,currentIV,newPrefix);
+			newPrefix[7] = guessedCharacterReturned;
+			for(int t = 0;t<newPrefix.length-1;t++)
+                		newPrefix[t]=newPrefix[t+1];
+			for(int i=0; i<7; i++)
+			{
+	   			if (i%8 == 0)
+	    				System.out.println();
+				System.out.print(String.format(" PREFIX %02x ",newPrefix[i]));
+	    		}
+		}
 			
 	 }
 
 /*************************************************************************************************************************************************/
-	public static void findoutHowtodothis(byte[]encBlock, byte[]currentCipherText,byte[]previousIV,byte[]newlyPreditedIV,long previousDate,byte[]currentIV) throws IOException
+	public static byte findoutHowtodothis(byte[]encBlock, byte[]currentCipherText,byte[]previousIV,byte[]newlyPreditedIV,long previousDate,byte[]currentIV,byte [] newPrefix) throws IOException
 	{
 		int guessIndex = 0;
-		byte guessChar = -127; 
-		
-		while (true){
-			byte[] guessIV = guessIV(currentIV, previousDate);
-			// calcucate next
-			byte[] padding = new byte[8];
-			padding[7] = guessChar;
-			for (int i = 0; i < 8; i++) {
-				padding[i] = (byte) (guessIV[i] ^ previousIV[i] ^ padding[i]);
+                byte guessChar = -127; 
+                
+
+                while (true){
+                        byte[] guessIV = guessIV(currentIV, previousDate);
+                        // calcucate next
+                        byte[] padding = new byte[8];
+			for (int p=0; p<8; p++)
+			{
+				padding[p] = newPrefix[p];
 			}
+                        padding[7] = (byte)guessChar;
+                        for (int i = 0; i < 8; i++) {
+                                padding[i] = (byte) (guessIV[i] ^ previousIV[i] ^ padding[i]);
+                        }
 
-			previousDate = new Date().getTime();
-			callEncrypt(padding, 8, currentCipherText);
-			currentIV = getBlock(currentCipherText, 0, 8);
+                        previousDate = new Date().getTime();
+                        callEncrypt(padding, 8, currentCipherText);
+                        currentIV = getBlock(currentCipherText, 0, 8);
 
-			// Check Correct guess
-			if (Arrays.equals(currentIV, guessIV)) {
+                        // Check Correct guess
+                        if (Arrays.equals(currentIV, guessIV)) {
 
-				System.out.println("Trying " + (char) guessChar);
+                                //System.out.println("Trying " + (char) guessChar);
 
-				if (Arrays.equals(encBlock, getBlock(currentCipherText, 1, 8))) {
-					System.out.println("Letter guessed");
-					break;
-				}
-				guessChar = (byte) (guessChar + 1);
-				if (guessChar == -128) {
-					System.out.println("Cannot guess");
-					System.exit(0);
-				}
-				// System.exit(0);
-			}
-		}
+                                if (Arrays.equals(encBlock, getBlock(currentCipherText, 1, 8))) {
+                                        System.out.println("Letter guessed " + (char)guessChar);
+                                        return guessChar;
+                                }
+                                guessChar = (byte) (guessChar + 1);
+                                if (guessChar == -128) {
+                                        System.out.println("Cannot guess");
+                                        System.exit(0);
+                                }
+                                // System.exit(0);
+                        }
+                }
 	}
 /*************************************************************************************************************************************************/
    	public static void dummyProgramPrintingAllCode256Times(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix)
