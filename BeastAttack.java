@@ -1,6 +1,9 @@
 import java.io.*;
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.util.Date;
+
 
 public class BeastAttack
 {
@@ -8,144 +11,69 @@ public class BeastAttack
         {
 		byte[] ciphertext=new byte[1024]; // will be plenty big enough
 		byte[] newCipherText=new byte[1024]; 
-        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x54};
+        	byte[] prefix = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00, (byte)0x00, (byte)0x00};
+		byte[] dummyArray = new byte[8];
+		byte[] tempArray = new byte[8];
 		byte[] previousIV = new byte[8];
 		byte[] newlyPreditedIV = new byte[8];
 		byte[] XORPredictedIVWithPrefix = new byte[8];
-		int lastByte = 0;
-		int oneBeforeLastByte = 0; 
-
-		//dummyProgramPrintingAllCode256Times(ciphertext,newCipherText,prefix,previousIV,newlyPreditedIV,XORPredictedIVWithPrefix);
-	
-		// e.g. this prints out the result of an encryption with no prefix
-		int length=callEncrypt(prefix,8,ciphertext);	    
-        	System.out.println("Original Ciphertext"+length);
-		for(int i=0; i<length; i++)
-		{
-	   		if (i%8 == 0)
-	    			System.out.println();
-	    		if (i<8){
-				previousIV[i] = ciphertext[i];
-				newlyPreditedIV[i] = previousIV[i];
-				if (i==7){
-				lastByte = (((previousIV[7] & 0xFF) + 100) < 256 ? ((previousIV[7] & 0xFF) + 100) : (previousIV[7] & 0xFF) - 156 );
-				}
-				if (i==6)
-				oneBeforeLastByte = previousIV[6] & 0xFF;
-	    		}
-	    		//int t = (int)previousIV[7];
-	    		System.out.print(String.format("%02x ",ciphertext[i]));
-	    		//System.out.print(String.format(" Previous %02x ",previousIV[7]));
- 	   		//System.out.print(String.format(" decimal "+ (previousIV[7] & 0xFF)));
-	   		//System.out.print(String.format(" decimal signed "+ ((int)previousIV[7])));
-	   	 	//System.out.println(String.format(" byte decimal signed %02x ",(byte)(lastByte & 0xFF)));
-	   		//System.out.println(String.format(" Previous number "+ lastByte));
-	   		//System.out.println("  Last Byte " + lastByte);
-	   		//System.out.print(String.format("Hello %d ",previousIV[7]));
-		}
-		System.out.println();
-		findoutHowtodothis(ciphertext,newCipherText,prefix,previousIV,newlyPreditedIV,XORPredictedIVWithPrefix,lastByte,oneBeforeLastByte);
-	/*for (int j = 0; j< 10; j++)
-	{	
-		for (int p = 0; p < 30; p++ )
-		{	
-			Byte b = 0; 
-			if (lastByte < 128 && lastByte >= 0){			
-				 b = Byte.valueOf(lastByte+""); 
-				 //System.out.println(String.format("Value of b 1 %02x", b));
-			}
-			else if (lastByte >= 128 && lastByte < 256) {
-				 b = Byte.valueOf((lastByte - 256)+"");
-				//System.out.println(String.format("Value of b 2 %02x", b));
-			}
-			else 
-				//System.out.println(String.format("This is impossible. This cannot be a Byte Value %02x", b));
-			newlyPreditedIV[7] = b;			
-			lastByte++;
-			if (lastByte == 256)
-				lastByte = 0;
-		}
-	}*/
 		
-		/*
-		//System.out.println(String.format("Printing newlyPredicted IV  %02x ", newlyPreditedIV[7]));
-		int predictedIVIntegerValue = 0;
-		int previousIVIntegerValue = 0;
-		int prefixIntegerValue = 0;
-		int xor = 0;
-		for (int k=0; k<8; k++){
-			predictedIVIntegerValue = (int)newlyPreditedIV[k];
-			previousIVIntegerValue = (int)previousIV[k];
-			prefixIntegerValue = (int)prefix[k];
-			xor = predictedIVIntegerValue^previousIVIntegerValue^prefixIntegerValue;
-			byte c = (byte)(0xff & xor);
-			XORPredictedIVWithPrefix[k] = c;
-		}
-	int lengthOfPredictedBlock=callEncrypt(XORPredictedIVWithPrefix,8,newCipherText);	    
-        System.out.println("\nSecond Ciphertext "+lengthOfPredictedBlock);
-	for(int i=0; i<lengthOfPredictedBlock; i++)
-	{
-	    if (i%8 == 0)
-	    	System.out.println();
-	    System.out.print(String.format("%02x ", newCipherText[i]));
-	}
-	}*/
-
+		byte guessedCharacterReturned = 0;
+		int blockDecoded = 6;
 	
-    	
+		
+			int length=callEncrypt(prefix,7,ciphertext);
+			long previousDate = new Date().getTime();
+			byte[] currentIV = Arrays.copyOfRange(ciphertext, 0, 8);
+			byte[] encBlock = Arrays.copyOfRange(ciphertext, 8, 16);
+			previousIV = Arrays.copyOfRange(ciphertext, 0, 8);	    
+        		System.out.println("Original Ciphertext"+length);
+			for(int i=0; i<length; i++)
+			{
+	   			if (i%8 == 0)
+	    				System.out.println();
+				System.out.print(String.format("%02x ",ciphertext[i]));
+	    		}
+			findoutHowtodothis(encBlock,newCipherText,previousIV,newlyPreditedIV,previousDate,currentIV);
+			
 	 }
 
 /*************************************************************************************************************************************************/
-	public static void findoutHowtodothis(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix,int lastByte,int oneBeforeLastByte) throws IOException
+	public static void findoutHowtodothis(byte[]encBlock, byte[]currentCipherText,byte[]previousIV,byte[]newlyPreditedIV,long previousDate,byte[]currentIV) throws IOException
 	{
-		int counterForLastByte = 0;
-		int counterForOneBeforeLastByte = 0;
-		int predictedIVIntegerValue = 0;
-		int previousIVIntegerValue = 0;
-		int prefixIntegerValue = 0;
-		int xor = 0;
-			while (counterForLastByte < 256){
-				Byte a = (byte)(newCipherText[6] & 0xFF);
-				newlyPreditedIV[6] = a;
-				Byte b = (byte)((newCipherText[7] & 0xFF) + 10);
-				newlyPreditedIV[7] = b;		
-				for (int k=0; k<8; k++){
-					predictedIVIntegerValue = (int)newlyPreditedIV[k];
-					previousIVIntegerValue = (int)previousIV[k];
-					prefixIntegerValue = (int)prefix[k];
-					xor = predictedIVIntegerValue^previousIVIntegerValue^prefixIntegerValue;
-					byte c = (byte)(0xff & xor);
-					XORPredictedIVWithPrefix[k] = c;
-				}
-				int lengthOfPredictedBlock=callEncrypt(XORPredictedIVWithPrefix,8,newCipherText);
-				if (Arrays.equals(Arrays.copyOfRange(ciphertext, 8, 15),Arrays.copyOfRange(newCipherText, 8, 15))){
-					//Find all possibilities of 8 - 15 in newCipher Matching 16 - 23 in newCipher
-					for (int t=8; t<16; t++){
-						for (int u=16; u<24; u++){
-							System.out.println(String.format("New Cipher Text  %02x  %02x",newCipherText[t],newCipherText[u]));
-							if (newCipherText[t] == newCipherText[u]){
-								System.out.println("You've Cracked it Baby");
-							}
-						}
-					} 
-					System.out.println("WOOOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-					break;				
-				}
-				else {
-					for(int i=0; i<8; i++)
-					{
-	   					 if (i%8 == 0)
-	    						System.out.println();
-	  					 System.out.print(String.format("Predicted IV %02x ", newlyPreditedIV[i]));
-						 System.out.println(String.format("System IV %02x ", newCipherText[i]));
-					}
-					System.out.println();				
-				}
-				counterForLastByte++;
-				lastByte++;
+		int guessIndex = 0;
+		byte guessChar = -127; 
+		
+		while (true){
+			byte[] guessIV = guessIV(currentIV, previousDate);
+			// calcucate next
+			byte[] padding = new byte[8];
+			padding[7] = guessChar;
+			for (int i = 0; i < 8; i++) {
+				padding[i] = (byte) (guessIV[i] ^ previousIV[i] ^ padding[i]);
 			}
-			counterForOneBeforeLastByte++;
-			oneBeforeLastByte++;		
+
+			previousDate = new Date().getTime();
+			callEncrypt(padding, 8, currentCipherText);
+			currentIV = getBlock(currentCipherText, 0, 8);
+
+			// Check Correct guess
+			if (Arrays.equals(currentIV, guessIV)) {
+
+				System.out.println("Trying " + (char) guessChar);
+
+				if (Arrays.equals(encBlock, getBlock(currentCipherText, 1, 8))) {
+					System.out.println("Letter guessed");
+					break;
+				}
+				guessChar = (byte) (guessChar + 1);
+				if (guessChar == -128) {
+					System.out.println("Cannot guess");
+					System.exit(0);
+				}
+				// System.exit(0);
+			}
+		}
 	}
 /*************************************************************************************************************************************************/
    	public static void dummyProgramPrintingAllCode256Times(byte[] ciphertext,byte[]newCipherText,byte[]prefix,byte[]previousIV,byte[]newlyPreditedIV, byte[]XORPredictedIVWithPrefix)
@@ -158,7 +86,7 @@ public class BeastAttack
         		for(int i=0; i<length; i++)
         		{
             			if (i%8 == 0)
-                    			System.out.println();
+                    			//System.out.println();
             			if (i<8){
                 			previousIV[i] = ciphertext[i];
                 			newlyPreditedIV[i] = previousIV[i];
@@ -188,13 +116,23 @@ public class BeastAttack
         			for(int i=0; i<lengthOfPredictedBlock; i++)
         			{
             				if (i%8 == 0)
-                    				System.out.println();
+                    				//System.out.println();
             				System.out.print(String.format("%02x ", newCipherText[i]));
         			}
         		}
 		}
 		catch (Exception e){
 		}
+	}
+
+	static byte[] guessIV(byte[] prevIV, long prevTime) {
+		long lprevIV = ByteBuffer.wrap(prevIV).getLong();
+		long diff = (new Date().getTime() - prevTime) * 5;
+		return ByteBuffer.allocate(8).putLong(lprevIV + diff).array();
+	}
+	static byte[] getBlock(byte[] c, int block, int blockSize) {
+		return Arrays.copyOfRange(c, blockSize * block, blockSize * block
+				+ blockSize);
 	}
 
 	// a helper method to call the external programme "encrypt" in the current directory
